@@ -1,0 +1,31 @@
+services:
+  sinan-ai-platform:
+    build: .
+    image: sinan-ai-platform:latest
+    container_name: sinan-ai-platform
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./data:/app/data
+    environment:
+      # 也可后台"模型设置"页配置，环境变量优先级低于数据库设置
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - AIP_CHAT_RATE_PER_MIN=${AIP_CHAT_RATE_PER_MIN:-30}
+      - AIP_WF_RATE_PER_MIN=${AIP_WF_RATE_PER_MIN:-20}
+      - AIP_LLM_MAX_ATTEMPTS=${AIP_LLM_MAX_ATTEMPTS:-3}
+      - AIP_SESSION_TTL_HOURS=${AIP_SESSION_TTL_HOURS:-168}
+      # 生产对接真实外网系统时务必设为 0（禁止工作流 http_api 节点访问私网/回环地址）
+      - AIP_HTTP_API_ALLOW_PRIVATE=${AIP_HTTP_API_ALLOW_PRIVATE:-1}
+      # settings 表 API Key 静态加密密钥；不设置则自动生成 data/.secret_key
+      - AIP_SECRET_KEY=${AIP_SECRET_KEY:-}
+      # 首次初始化的 admin 口令；不设置则用出厂演示口令并强制首次登录修改
+      - AIP_ADMIN_PASSWORD=${AIP_ADMIN_PASSWORD:-}
+    # 容器加固：资源上限 + 禁止提权，防容器内 DoS/逃逸放大
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

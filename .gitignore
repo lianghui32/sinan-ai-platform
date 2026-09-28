@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mimosa/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+.env
+.venv/
+
+# 私人文档（不入库）
+docs/面试深挖指南.md
+
+# 临时
+*.log

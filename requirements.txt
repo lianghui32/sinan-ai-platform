@@ -1,0 +1,12 @@
+# 版本锁定：与开发环境实测一致（Python 3.12），保证可复现构建
+# 2026-09 依赖审计（pip-audit）后整体升级：
+#   fastapi 0.141.1 + starlette 1.7.0（清除 PYSEC-2026-161/248/249/2280/2281/1941/1942 等 7 条公告）
+#   python-multipart 0.0.32（清除 PYSEC-2026-1852/3036~3040 等 6 条公告）
+fastapi==0.141.1
+starlette==1.7.0
+python-multipart==0.0.32
+uvicorn==0.35.0
+httpx==0.28.1
+numpy==2.2.0
+python-docx==1.2.0
+pytest==9.1.1

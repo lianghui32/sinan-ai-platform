@@ -1,0 +1,14 @@
+.git
+.github
+.pytest_cache
+.mimosa
+__pycache__
+*.pyc
+data/
+eval/
+docs/
+tests/__pycache__
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore

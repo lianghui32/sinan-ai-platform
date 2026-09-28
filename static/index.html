@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>司南AI中台 — 跨境电商企业级AI平台</title>
+<link rel="icon" href="data:,">
+<script>
+/* 防闪白：首帧渲染前从 localStorage 恢复主题（app.js 里的 setTheme 负责交互与记忆） */
+document.documentElement.dataset.theme = (function () {
+  try { return localStorage.getItem("aip_theme") || "light"; } catch (e) { return "light"; }
+})();
+</script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- 登录 / 注册 -->
+<div id="view-login" class="login-wrap">
+  <div class="login-card">
+    <h1>司南AI中台</h1>
+    <p class="sub">跨境电商企业级 AI 中台 · 多用户 · 岗位助手 · 知识库 · 工作流</p>
+    <div class="tabs">
+      <button id="tab-login" class="tab active" onclick="switchAuthTab('login')">登录</button>
+      <button id="tab-register" class="tab" onclick="switchAuthTab('register')">注册</button>
+    </div>
+    <div id="form-login">
+      <input id="login-username" placeholder="用户名" autocomplete="username" onkeydown="authKeydown(event,'login')">
+      <input id="login-password" type="password" placeholder="密码" autocomplete="current-password" onkeydown="authKeydown(event,'login')">
+      <button class="btn-primary block" id="login-btn" onclick="doLogin()">登 录</button>
+      <p class="hint">没有账号？点上方「注册」自行创建，或联系管理员开通</p>
+    </div>
+    <div id="form-register" style="display:none">
+      <input id="reg-username" placeholder="用户名（2-32位）" onkeydown="authKeydown(event,'register')">
+      <input id="reg-password" type="password" placeholder="密码（至少6位）" onkeydown="authKeydown(event,'register')">
+      <input id="reg-department" placeholder="部门（从下拉选择）" list="dept-options" onkeydown="authKeydown(event,'register')">
+      <datalist id="dept-options">
+        <option value="运营部"><option value="产品部"><option value="开发部">
+        <option value="管理部"><option value="客服部"><option value="财务部"><option value="人事部">
+      </datalist>
+      <input id="reg-display" placeholder="姓名（可选）" onkeydown="authKeydown(event,'register')">
+      <button class="btn-primary block" id="reg-btn" onclick="doRegister()">注 册</button>
+      <p class="hint">注册后默认为「员工」角色，可用部门匹配的岗位助手</p>
+    </div>
+    <p id="login-error" class="error" role="alert"></p>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="view-main" style="display:none">
+  <header class="topbar">
+    <div class="logo">司南AI中台</div>
+    <nav>
+      <button class="nav-btn active" data-view="chat" onclick="switchView('chat')">助手对话</button>
+      <button class="nav-btn" data-view="kb" onclick="switchView('kb')">知识库</button>
+      <button class="nav-btn" data-view="wf" onclick="switchView('wf')">工作流</button>
+      <button class="nav-btn" id="nav-admin" data-view="admin" onclick="switchView('admin')" style="display:none">管理后台</button>
+    </nav>
+    <div class="userbox">
+      <span id="user-info"></span>
+      <button class="btn-ghost" id="topbar-theme-btn" onclick="toggleThemeMenu(event, 'topbar')">🎨 主题</button>
+      <button class="btn-ghost" onclick="doLogout()">退出</button>
+    </div>
+  </header>
+
+  <!-- 对话 -->
+  <section id="page-chat" class="page">
+    <aside class="side">
+      <h3>岗位助手</h3>
+      <div id="assistant-list" class="list"></div>
+      <h3>我的会话 <button class="btn-mini" id="new-conv-btn" onclick="newConversation()">＋新会话</button></h3>
+      <div id="conversation-list" class="list"></div>
+    </aside>
+    <div class="chat-main">
+      <div id="assistant-banner" class="banner">请选择左侧助手开始对话</div>
+      <div id="messages" class="messages"></div>
+      <div class="inputbar">
+        <textarea id="chat-input" rows="2" maxlength="8000" placeholder="选择助手并新建会话后即可提问" onkeydown="chatKeydown(event)"></textarea>
+        <button class="btn-primary" id="send-btn" onclick="sendMessage()" disabled>发送</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 知识库 -->
+  <section id="page-kb" class="page" style="display:none">
+    <aside class="side">
+      <h3>知识库 <button class="btn-mini" id="kb-add-btn" style="display:none" onclick="createKb()">＋新建</button></h3>
+      <div id="kb-list" class="list"></div>
+    </aside>
+    <div class="content-main">
+      <div class="card">
+        <h3><span id="kb-title-text">知识库检索</span> <button class="btn-ghost mini" id="kb-edit-btn" style="display:none" onclick="editKb()">编辑</button></h3>
+        <div class="row">
+          <select id="kb-search-mode" title="检索算法">
+            <option value="hybrid">混合检索（BM25+TF-IDF，RRF 融合）</option>
+            <option value="bm25">BM25</option>
+            <option value="tfidf">TF-IDF 余弦</option>
+          </select>
+          <input id="kb-search-input" placeholder="输入问题检索知识库，如：FBA发货要注意什么" style="flex:1;min-width:160px">
+          <button class="btn-primary" id="kb-search-btn" onclick="searchKb()">检索</button>
+        </div>
+        <p class="hint left">检索到的是知识分块原文与相关度得分，助手对话时默认用「混合检索」自动注入这些内容。</p>
+      </div>
+      <div id="kb-search-result"></div>
+      <div class="card" id="kb-upload-card" style="display:none">
+        <h3>上传文档（txt / md / docx / csv，单个 ≤ 2MB）</h3>
+        <div class="row">
+          <input type="file" id="kb-file" accept=".txt,.md,.csv,.docx">
+          <button class="btn-primary" id="kb-upload-btn" onclick="uploadDoc()">上传并建索引</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>文档列表 <button class="btn-danger" id="kb-del-btn" style="display:none" onclick="deleteKb()">删除该知识库</button></h3>
+        <div id="kb-docs"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 工作流 -->
+  <section id="page-wf" class="page" style="display:none">
+    <aside class="side">
+      <h3>工作流</h3>
+      <div id="wf-list" class="list"></div>
+    </aside>
+    <div class="content-main">
+      <div id="wf-detail" class="card">选择左侧工作流查看详情并执行</div>
+      <div id="wf-live" class="card" style="display:none"></div>
+      <div class="card"><h3>执行历史</h3><div id="wf-runs"></div></div>
+      <div id="wf-run-detail" class="card" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- 管理后台 -->
+  <section id="page-admin" class="page" style="display:none">
+    <aside class="side">
+      <h3>后台管理</h3>
+      <div class="list">
+        <div class="list-item active" data-atab="users" onclick="switchAdminTab('users')">用户与权限</div>
+        <div class="list-item" data-atab="assistants" onclick="switchAdminTab('assistants')">助手配置</div>
+        <div class="list-item" data-atab="wfs" onclick="switchAdminTab('wfs')">工作流配置</div>
+        <div class="list-item" data-atab="stats" onclick="switchAdminTab('stats')">使用情况</div>
+        <div class="list-item" data-atab="convs" onclick="switchAdminTab('convs')">对话记录</div>
+        <div class="list-item" data-atab="settings" onclick="switchAdminTab('settings')">模型设置</div>
+      </div>
+    </aside>
+    <div class="content-main">
+      <div id="atab-users" class="atab"></div>
+      <div id="atab-assistants" class="atab" style="display:none"></div>
+      <div id="atab-wfs" class="atab" style="display:none"></div>
+      <div id="atab-stats" class="atab" style="display:none"></div>
+      <div id="atab-convs" class="atab" style="display:none"></div>
+      <div id="atab-settings" class="atab" style="display:none"></div>
+    </div>
+  </section>
+</div>
+
+<button class="theme-fab" id="theme-fab" title="切换主题" aria-haspopup="menu" onclick="toggleThemeMenu()">🎨</button>
+<div class="theme-menu" id="theme-menu" role="menu" style="display:none"></div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
